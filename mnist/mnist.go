@@ -9,13 +9,13 @@ import (
 )
 
 const (
-	TrainImagesFile  = "train-images-idx3-ubyte"
-	TrainLabelsFile  = "train-labels-idx1-ubyte"
-	TestImagesFile   = "t10k-images-idx3-ubyte"
-	TestLabelsFile   = "t10k-labels-idx1-ubyte"
+	TrainImagesFile = "train-images-idx3-ubyte"
+	TrainLabelsFile = "train-labels-idx1-ubyte"
+	TestImagesFile  = "t10k-images-idx3-ubyte"
+	TestLabelsFile  = "t10k-labels-idx1-ubyte"
 
-	labelsFileMagic  = 0x00000801
-	imagesFileMagic  = 0x00000803
+	labelsFileMagic = 0x00000801
+	imagesFileMagic = 0x00000803
 
 	msgInvalidFormat = "Invalid format: %s"
 	msgSizeUnmatch   = "Data size does not match: %s %s"
@@ -37,16 +37,16 @@ func readInt32(f *os.File) (int, error) {
 	}
 	v := 0
 	for _, x := range buf {
-		v = v * 256 + int(x)
+		v = v*256 + int(x)
 	}
 	return v, nil
 }
 
 // internal: raw image data
 type imageData struct {
-	N int
-	W int
-	H int
+	N    int
+	W    int
+	H    int
 	Data []uint8
 }
 
@@ -83,7 +83,7 @@ func readImagesFile(path string) (*imageData, error) {
 
 // internal: raw label data
 type labelData struct {
-	N int
+	N    int
 	Data []uint8
 }
 
@@ -117,9 +117,9 @@ type DigitImage struct {
 
 // Data set
 type DataSet struct {
-	N int
-	W int
-	H int
+	N    int
+	W    int
+	H    int
 	Data []DigitImage
 }
 
@@ -177,7 +177,7 @@ func PrintImage(image [][]uint8) {
 			if pix == 0 {
 				fmt.Print(" ")
 			} else {
-				fmt.Printf("%X", pix / 16)
+				fmt.Printf("%X", pix/16)
 			}
 		}
 		fmt.Println()
