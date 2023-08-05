@@ -1,12 +1,16 @@
 package main
 
 import (
+	"encoding/csv"
 	"fmt"
 	"math"
+	"math/rand"
+	"os"
 	"reflect"
 	"sort"
 
 	"github.com/e-XpertSolutions/go-iforest/iforest"
+	randomforest "github.com/malaschitz/randomForest"
 	"github.com/petar/GoMNIST"
 )
 
@@ -56,6 +60,7 @@ func convertMNISTForModeling(images []GoMNIST.RawImage) [][]float64 {
 }
 
 func main() {
+	rand.Seed(1)
 
 	//////////////////////////
 	// GoMNIST time			//
@@ -93,7 +98,7 @@ func main() {
 	treesNumber := 100
 	subsampleSize := 256
 	outliersRatio := 0.01
-	routinesNumber := 10
+	//routinesNumber := 10
 
 	//model initialization
 	forest := iforest.NewForest(treesNumber, subsampleSize, outliersRatio)
@@ -105,7 +110,7 @@ func main() {
 	//Test or TestParaller can be used, concurrent version needs one additional
 	// parameter
 	forest.Test(inputData)
-	forest.TestParallel(inputData, routinesNumber)
+	//	forest.TestParallel(inputData, routinesNumber)
 
 	//after testing it is possible to access anomaly scores, anomaly bound
 	// and labels for the input dataset
@@ -195,4 +200,44 @@ func main() {
 	// var newData [][]float64
 	// newData = loadData("someNewInstances")
 	// labels, scores := forest.Predict(newData)
+
+	//////////////////////////
+	// RandomForest time	//
+	//////////////////////////
+
+	rForest := randomforest.IsolationForest{X: inputData}
+	rForest.Train(100000)
+	reflect.TypeOf(rForest.Results)
+	reflect.TypeOf(rForest.Results[0])
+
+	//////////////////////////
+	// CSV time				//
+	//////////////////////////
+
+	// Create the CSV file
+	file, err := os.Create("results/goIForestScores.csv")
+	if err != nil {
+		fmt.Println("Could not create file:", err)
+		return
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	// Write the header
+	if err := writer.Write([]string{"idx", "label", "anomalyScore"}); err != nil {
+		fmt.Println("Error writing header:", err)
+		return
+	}
+
+	// Write the rows
+	for idx, score := range anomalyScores {
+		label := train.Labels[idx]
+		row := []string{fmt.Sprint(idx + 1), fmt.Sprint(label), fmt.Sprintf("%.6f", score)} // Adjust the format as needed
+		if err := writer.Write(row); err != nil {
+			fmt.Println("Error writing row:", err)
+			return
+		}
+	}
 }
