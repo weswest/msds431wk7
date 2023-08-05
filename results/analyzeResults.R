@@ -40,6 +40,12 @@ title(paste("Correlation between Python and R isotree anomaly scores:",
 	as.character(round(with(analyzeData,cor(scorePython,scoreIsotreeR)),digits = 2))))
 dev.off()
 
+pdf(file = "results/fig-scatterplot-isotree-solitude-anomaly-scores.pdf", width = 11, height = 8.5)
+with(analyzeData, plot(scoreIsotreeR, scoreSolitudeR))
+title(paste("Correlation between R isotree and Solitude anomaly scores:",
+	as.character(round(with(analyzeData,cor(scoreIsotreeR, scoreSolitudeR)),digits = 2))))
+dev.off()
+
 
 # Go results
 
