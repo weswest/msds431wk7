@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"os"
 	"reflect"
-	"sort"
 
 	"github.com/e-XpertSolutions/go-iforest/iforest"
 	randomforest "github.com/malaschitz/randomForest"
@@ -60,7 +59,7 @@ func convertMNISTForModeling(images []GoMNIST.RawImage) [][]float64 {
 }
 
 func main() {
-	rand.Seed(1)
+	rand.Seed(431)
 
 	//////////////////////////
 	// GoMNIST time			//
@@ -81,21 +80,18 @@ func main() {
 	fmt.Println("Rows: ", train.NRow, test.NRow)
 	fmt.Println("Columns: ", train.NCol, test.NCol)
 	// Print the first image in the train and test set
-	fmt.Println(train.Labels[0], train.Images[0])
-	fmt.Println(test.Labels[0], test.Images[0])
-	fmt.Println(reflect.TypeOf(train.Images[0]))
+	//	fmt.Println(train.Labels[0], train.Images[0])
+	//	fmt.Println(test.Labels[0], test.Images[0])
+	//	fmt.Println(reflect.TypeOf(train.Images[0]))
 
-	printImage(train.Images[0])
-	printImage(test.Images[0])
+	inputData := convertMNISTForModeling(train.Images)
 
 	//////////////////////////
 	// iForest time			//
 	//////////////////////////
 
-	inputData := convertMNISTForModeling(train.Images)
-
 	// input parameters
-	treesNumber := 100
+	treesNumber := 100000
 	subsampleSize := 256
 	outliersRatio := 0.01
 	//routinesNumber := 10
@@ -116,99 +112,25 @@ func main() {
 	// and labels for the input dataset
 
 	//	threshold := forest.AnomalyBound
-	anomalyScores := forest.AnomalyScores
+	iForestAnomalyScores := forest.AnomalyScores
 	//	labelsTest := forest.Labels
 
-	fmt.Println("Anomaly scores: ", anomalyScores)
-	fmt.Println("Anomaly scores length: ", len(anomalyScores))
-	fmt.Println("Anomaly scores type: ", reflect.TypeOf(anomalyScores))
-	fmt.Println("Anomaly score for first item: ", anomalyScores[0])
-
-	const numBands = 10
-	const numLabels = 10
-	var table [numLabels][numBands]int
-	var totalPerLabel [numLabels]int
-
-	// Loop over all images in the dataset
-	for idx, score := range anomalyScores {
-		label := train.Labels[idx]
-		band := int(score * numBands)
-
-		// If score is exactly 1.0, it should fall into the last band (index 9), not a new band
-		if band == numBands {
-			band = numBands - 1
-		}
-
-		table[label][band]++
-		totalPerLabel[label]++
-	}
-
-	// Print the table
-	for label, counts := range table {
-		fmt.Printf("Label %d: ", label)
-		for _, count := range counts {
-			percentage := float64(count) / float64(totalPerLabel[label]) * 100
-			fmt.Printf("%.2f%% ", percentage)
-		}
-		fmt.Println()
-	}
-	//////////////////////////
-	// Anomalies vs Normals	//
-	//////////////////////////
-
-	type ScoredImage struct {
-		Score float64
-		Image GoMNIST.RawImage
-	}
-
-	// Group all the images by label
-	imagesByLabel := make(map[GoMNIST.Label][]ScoredImage)
-	for idx, score := range anomalyScores {
-		label := train.Labels[idx]
-		image := train.Images[idx]
-
-		imagesByLabel[label] = append(imagesByLabel[label], ScoredImage{
-			Score: score,
-			Image: image,
-		})
-	}
-
-	// For each label, find the two images with the lowest anomaly scores and
-	// one image with the highest anomaly score, then print them
-	for label, images := range imagesByLabel {
-		// Sort images by score
-		sort.Slice(images, func(i, j int) bool {
-			return images[i].Score < images[j].Score
-		})
-
-		fmt.Printf("Label %d:\n", label)
-
-		if len(images) >= 2 {
-			fmt.Println("Two images with the lowest anomaly scores:")
-			printImage(images[0].Image)
-			printImage(images[1].Image)
-		}
-
-		if len(images) >= 1 {
-			fmt.Println("One image with the highest anomaly score:")
-			printImage(images[len(images)-1].Image)
-		}
-	}
-
-	//to get information about new instances pass them to the Predict function
-	// to speed up computation use concurrent version of Predict
-	// var newData [][]float64
-	// newData = loadData("someNewInstances")
-	// labels, scores := forest.Predict(newData)
+	//	fmt.Println("Anomaly scores: ", iForestAnomalyScores)
+	fmt.Println("Anomaly scores length: ", len(iForestAnomalyScores))
+	fmt.Println("Anomaly scores type: ", reflect.TypeOf(iForestAnomalyScores))
+	fmt.Println("Anomaly score for first item: ", iForestAnomalyScores[0])
 
 	//////////////////////////
 	// RandomForest time	//
 	//////////////////////////
 
+	fmt.Println("Starting RandomForest")
 	rForest := randomforest.IsolationForest{X: inputData}
 	rForest.Train(100000)
-	reflect.TypeOf(rForest.Results)
-	reflect.TypeOf(rForest.Results[0])
+	fmt.Println("rForest len", len(rForest.Results))
+	fmt.Println("rForest.Results type: ", reflect.TypeOf(rForest.Results))
+	fmt.Println("rForest.Results[0] type: ", reflect.TypeOf(rForest.Results[0]))
+	fmt.Println("rForest.Results[0]", rForest.Results[0])
 
 	//////////////////////////
 	// CSV time				//
@@ -226,13 +148,13 @@ func main() {
 	defer writer.Flush()
 
 	// Write the header
-	if err := writer.Write([]string{"idx", "label", "anomalyScore"}); err != nil {
+	if err := writer.Write([]string{"idx", "label", "iForestAnomalyScore"}); err != nil {
 		fmt.Println("Error writing header:", err)
 		return
 	}
 
 	// Write the rows
-	for idx, score := range anomalyScores {
+	for idx, score := range iForestAnomalyScores {
 		label := train.Labels[idx]
 		row := []string{fmt.Sprint(idx + 1), fmt.Sprint(label), fmt.Sprintf("%.6f", score)} // Adjust the format as needed
 		if err := writer.Write(row); err != nil {
