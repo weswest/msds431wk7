@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"os"
 	"reflect"
+	"sort"
 
 	"github.com/e-XpertSolutions/go-iforest/iforest"
 	randomforest "github.com/malaschitz/randomForest"
@@ -58,6 +59,58 @@ func convertMNISTForModeling(images []GoMNIST.RawImage) [][]float64 {
 	return floatImages
 }
 
+// This is related to normalizing the randomForest Isolation Forest implementation
+func normalizeScores(scores []float64, min, max float64) []float64 {
+	normalized := make([]float64, len(scores))
+	for i, score := range scores {
+		normalized[i] = (score - min) / (max - min)
+	}
+	return normalized
+}
+
+// This is related to pushing results out to the CSV file
+func WriteCSV(iForestAnomalyScores map[int]float64, normalizedScores map[int]float64, labels []int) {
+	file, err := os.Create("results/goIForestScores.csv")
+	if err != nil {
+		fmt.Println("Could not create file:", err)
+		return
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	// Write the header
+	if err := writer.Write([]string{"idx", "label", "iForestAnomalyScore", "rForestNormalizedScore"}); err != nil {
+		fmt.Println("Error writing header:", err)
+		return
+	}
+
+	// Extract and sort the keys from the map
+	var keys []int
+	for k := range iForestAnomalyScores {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys)
+
+	// Write the rows in index order
+	for _, idx := range keys {
+		label := labels[idx]
+		iForestScore := iForestAnomalyScores[idx]
+		normalizedScore := normalizedScores[idx]
+		row := []string{
+			fmt.Sprint(idx + 1),
+			fmt.Sprint(label),
+			fmt.Sprintf("%.6f", iForestScore),
+			fmt.Sprintf("%.6f", normalizedScore),
+		}
+		if err := writer.Write(row); err != nil {
+			fmt.Println("Error writing row:", err)
+			return
+		}
+	}
+}
+
 func main() {
 	rand.Seed(431)
 
@@ -73,6 +126,8 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
+	fmt.Println("First Train label: ", train.Labels[0])
+	printImage(train.Images[0])
 
 	// This code returns the train and test MNIST.Set types
 	// Set has NRow, NCol, Images ([]RawImage), Labels ([]Label)
@@ -91,20 +146,22 @@ func main() {
 	//////////////////////////
 
 	// input parameters
-	treesNumber := 100000
+	treesNumber := 100
 	subsampleSize := 256
 	outliersRatio := 0.01
-	//routinesNumber := 10
+	//	routinesNumber := 100
 
 	//model initialization
 	forest := iforest.NewForest(treesNumber, subsampleSize, outliersRatio)
 
 	//training stage - creating trees
+	fmt.Println("Starting training")
 	forest.Train(inputData)
 
 	//testing stage - finding anomalies
 	//Test or TestParaller can be used, concurrent version needs one additional
 	// parameter
+	fmt.Println("Starting testing")
 	forest.Test(inputData)
 	//	forest.TestParallel(inputData, routinesNumber)
 
@@ -120,6 +177,35 @@ func main() {
 	fmt.Println("Anomaly scores type: ", reflect.TypeOf(iForestAnomalyScores))
 	fmt.Println("Anomaly score for first item: ", iForestAnomalyScores[0])
 
+	// This code prints a rough histogram for each label
+	const numBands = 10
+	const numLabels = 10
+	var table [numLabels][numBands]int
+	var totalPerLabel [numLabels]int
+
+	// Loop over all images in the dataset
+	for idx, score := range iForestAnomalyScores {
+		label := train.Labels[idx]
+		band := int(score * numBands)
+
+		// If score is exactly 1.0, it should fall into the last band (index 9), not a new band
+		if band == numBands {
+			band = numBands - 1
+		}
+
+		table[label][band]++
+		totalPerLabel[label]++
+	}
+
+	// Print the table
+	for label, counts := range table {
+		fmt.Printf("Label %d: ", label)
+		for _, count := range counts {
+			percentage := float64(count) / float64(totalPerLabel[label]) * 100
+			fmt.Printf("%.2f%% ", percentage)
+		}
+		fmt.Println()
+	}
 	//////////////////////////
 	// RandomForest time	//
 	//////////////////////////
@@ -132,34 +218,44 @@ func main() {
 	fmt.Println("rForest.Results[0] type: ", reflect.TypeOf(rForest.Results[0]))
 	fmt.Println("rForest.Results[0]", rForest.Results[0])
 
+	results := rForest.Results
+	// Calculate anomaly scores and find min and max scores.
+	scores := make([]float64, len(results))
+	minScore := float64(results[0][1]) / float64(results[0][0])
+	maxScore := minScore
+	for i, res := range results {
+		scores[i] = float64(res[1]) / float64(res[0])
+		if scores[i] < minScore {
+			minScore = scores[i]
+		}
+		if scores[i] > maxScore {
+			maxScore = scores[i]
+		}
+	}
+
+	// Normalize scores to a 0-1 range.
+	normalizedScores := normalizeScores(scores, minScore, maxScore)
+	fmt.Println("normalizedScores len", len(normalizedScores))
+	fmt.Println("Ten normalizedScores", normalizedScores[0:10])
+
 	//////////////////////////
 	// CSV time				//
 	//////////////////////////
 
-	// Create the CSV file
-	file, err := os.Create("results/goIForestScores.csv")
-	if err != nil {
-		fmt.Println("Could not create file:", err)
-		return
+	// Convert slices to maps
+	iForestAnomalyScoresMap := make(map[int]float64, len(iForestAnomalyScores))
+	normalizedScoresMap := make(map[int]float64, len(normalizedScores))
+	for i, v := range iForestAnomalyScores {
+		iForestAnomalyScoresMap[i] = v
 	}
-	defer file.Close()
-
-	writer := csv.NewWriter(file)
-	defer writer.Flush()
-
-	// Write the header
-	if err := writer.Write([]string{"idx", "label", "iForestAnomalyScore"}); err != nil {
-		fmt.Println("Error writing header:", err)
-		return
+	for i, v := range normalizedScores {
+		normalizedScoresMap[i] = v
+	}
+	// Convert GoMNIST.Label to int
+	labelsInt := make([]int, len(train.Labels))
+	for i, label := range train.Labels {
+		labelsInt[i] = int(label)
 	}
 
-	// Write the rows
-	for idx, score := range iForestAnomalyScores {
-		label := train.Labels[idx]
-		row := []string{fmt.Sprint(idx + 1), fmt.Sprint(label), fmt.Sprintf("%.6f", score)} // Adjust the format as needed
-		if err := writer.Write(row); err != nil {
-			fmt.Println("Error writing row:", err)
-			return
-		}
-	}
+	WriteCSV(iForestAnomalyScoresMap, normalizedScoresMap, labelsInt)
 }

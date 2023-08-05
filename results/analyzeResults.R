@@ -10,7 +10,8 @@ analyzeData <- data.frame("digitLabel" = digitLabels$digitLabel,
 	"scoreSolitudeR" = scoresSolitudeR$iforestRScore.anomaly_score,
 	"scoreIsotreeR" = scoresIsotreeR$isotreeRScore,
 	"scorePython" = scoresPython$iforestPythonScore,
-	"scoreGo" = scoresGo$anomalyScore)
+	"scoreGoIForest" = scoresGo$iForestAnomalyScore)
+	"scoreGoRForest" = scoresGo$rForestNormalizedScore)
 
 # Note that distributions of anomaly scores have different shapes
 # Are there hyperparameter settings that may bring the 
