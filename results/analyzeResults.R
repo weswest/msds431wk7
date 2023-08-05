@@ -10,7 +10,7 @@ analyzeData <- data.frame("digitLabel" = digitLabels$digitLabel,
 	"scoreSolitudeR" = scoresSolitudeR$iforestRScore.anomaly_score,
 	"scoreIsotreeR" = scoresIsotreeR$isotreeRScore,
 	"scorePython" = scoresPython$iforestPythonScore,
-	"scoreGoIForest" = scoresGo$iForestAnomalyScore)
+	"scoreGoIForest" = scoresGo$iForestAnomalyScore,
 	"scoreGoRForest" = scoresGo$rForestNormalizedScore)
 
 # Note that distributions of anomaly scores have different shapes
@@ -44,23 +44,53 @@ dev.off()
 # Go results
 
 pdf(file = "results/fig-go-itree-anomaly-scores.pdf", width = 11, height = 8.5)
-with(analyzeData, plot(density(scoreGo)))
+with(analyzeData, plot(density(scoreGoIForest)))
 dev.off()
 
-pdf(file = "results/fig-scatterplot-go-x-python-anomaly-scores.pdf", width = 11, height = 8.5)
-with(analyzeData, plot(scoreGo,scorePython))
-title(paste("Correlation between Go I-Tree and Python anomaly scores:",
-	as.character(round(with(analyzeData,cor(scoreGo, scorePython)),digits = 2))))
+pdf(file = "results/fig-scatterplot-goIF-x-python-anomaly-scores.pdf", width = 11, height = 8.5)
+with(analyzeData, plot(scoreGoIForest,scorePython))
+title(paste("Correlation between Go IF and Python anomaly scores:",
+	as.character(round(with(analyzeData,cor(scoreGoIForest, scorePython)),digits = 2))))
 dev.off()
 
-pdf(file = "results/fig-scatterplot-go-x-risotree-anomaly-scores.pdf", width = 11, height = 8.5)
-with(analyzeData, plot(scoreGo,scoreIsotreeR))
-title(paste("Correlation between Go I-Tree and rIsotree anomaly scores:",
-	as.character(round(with(analyzeData,cor(scoreGo, scoreIsotreeR)),digits = 2))))
+pdf(file = "results/fig-scatterplot-goIF-x-risotree-anomaly-scores.pdf", width = 11, height = 8.5)
+with(analyzeData, plot(scoreGoIForest,scoreIsotreeR))
+title(paste("Correlation between Go IForest and rIsotree anomaly scores:",
+	as.character(round(with(analyzeData,cor(scoreGoIForest, scoreIsotreeR)),digits = 2))))
 dev.off()
 
-pdf(file = "results/fig-scatterplot-go-x-solitude-anomaly-scores.pdf", width = 11, height = 8.5)
-with(analyzeData, plot(scoreGo,scoreSolitudeR))
-title(paste("Correlation between Go I-Tree and r Solitude anomaly scores:",
-	as.character(round(with(analyzeData,cor(scoreGo, scoreSolitudeR)),digits = 2))))
+pdf(file = "results/fig-scatterplot-goIF-x-solitude-anomaly-scores.pdf", width = 11, height = 8.5)
+with(analyzeData, plot(scoreGoIForest,scoreSolitudeR))
+title(paste("Correlation between Go IForest and r Solitude anomaly scores:",
+	as.character(round(with(analyzeData,cor(scoreGoIForest, scoreSolitudeR)),digits = 2))))
+dev.off()
+
+
+pdf(file = "results/fig-go-rtree-anomaly-scores.pdf", width = 11, height = 8.5)
+with(analyzeData, plot(density(scoreGoRForest)))
+dev.off()
+
+pdf(file = "results/fig-scatterplot-goRF-x-python-anomaly-scores.pdf", width = 11, height = 8.5)
+with(analyzeData, plot(scoreGoRForest,scorePython))
+title(paste("Correlation between Go RF and Python anomaly scores:",
+	as.character(round(with(analyzeData,cor(scoreGoRForest, scorePython)),digits = 2))))
+dev.off()
+
+pdf(file = "results/fig-scatterplot-goRF-x-risotree-anomaly-scores.pdf", width = 11, height = 8.5)
+with(analyzeData, plot(scoreGoRForest,scoreIsotreeR))
+title(paste("Correlation between Go RForest and rIsotree anomaly scores:",
+	as.character(round(with(analyzeData,cor(scoreGoRForest, scoreIsotreeR)),digits = 2))))
+dev.off()
+
+pdf(file = "results/fig-scatterplot-goRF-x-solitude-anomaly-scores.pdf", width = 11, height = 8.5)
+with(analyzeData, plot(scoreGoRForest,scoreSolitudeR))
+title(paste("Correlation between Go RForest and r Solitude anomaly scores:",
+	as.character(round(with(analyzeData,cor(scoreGoRForest, scoreSolitudeR)),digits = 2))))
+dev.off()
+
+
+pdf(file = "results/fig-scatterplot-goRF-x-goIF-anomaly-scores.pdf", width = 11, height = 8.5)
+with(analyzeData, plot(scoreGoRForest,scoreGoIForest))
+title(paste("Correlation between Go RForest and Go IForest anomaly scores:",
+	as.character(round(with(analyzeData,cor(scoreGoRForest, scoreGoIForest)),digits = 2))))
 dev.off()
