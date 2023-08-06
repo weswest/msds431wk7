@@ -64,12 +64,13 @@ In any case, run:
 TKTKTK
 ```
 
+the R file results/analyzeResults.R was largely provided by our professor as an example of how to quickly collect and compare different scores.  This code was enriched based on what he shared to also include multiple Go instances and to produce png versions of graphs for inclusion in this document.
 
 As always, this program was developed on a Mac although both Mac and Windows executables are provided.  This is because the Canvas website which manages assignments will only accept a .exe and won't accept a Mac executable.  The Mac executable has been tested and works; the Windows executable has not been tested.
 
 # Full Set of Packages Researched
 
-These were all of the packages that we, as a class, took a look at:
+These were all of the packages that we, as a class, took a look at to see if they would work for isolation forest applications:
 
 * [e-XpertSolutions/go-iforest](https://github.com/e-XpertSolutions/go-iforest).  This is my preferred: it was last active in November 2022 and has good documentation for how to use it.  Also, we don't know yet how the python code looks but this has built-in functionality to run this on the training set and apply the model to the test set
 * [bn4t/go_iforest](https://github.com/bn4t/go-iforest).  Looks like a valid option.  Output is the anomaly score and that's it.  Last updated in Jan 2021
@@ -81,9 +82,11 @@ These were all of the packages that we, as a class, took a look at:
 * Hat tip to [petar/GoMNIST](https://github.com/petar/GoMNIST) for writing a set of functions to make reading the MNIST data a little less painful.
 * Hat tip to [Prof Miller](https://github.com/ThomasWMiller/jump-start-mnist-iforest/tree/main) for providing a bunch of work we could use as a starting point.
 
-# Full Results in Graphical Form
+# Distribution and Correlation Graphs
 
-### Density Plots for Each Method
+### Distribution Graphs
+
+
 
 # FYI - assignment details motivating this work
 
