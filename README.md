@@ -86,7 +86,9 @@ These were all of the packages that we, as a class, took a look at to see if the
 
 ### Distribution Graphs
 
+**Go IForest**
 
+![Distro-GoIForest](./results/fig-go-itree-anomaly-scores.png)
 
 # FYI - assignment details motivating this work
 
