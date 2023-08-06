@@ -53,6 +53,11 @@ It will be straightforward.  I am concerned, though, at the lack of dynamism aro
 
 I was also surprised at how slow the code was.  I benefitted from not having to run the Python or R code to produce the scores myself, but it was not a fast process to run these two go approaches.  I made some half-hearted attempts to speed it up using concurrency but I worried about maintaining appropriate order in my data structure for downstream comparison to other systems' outputs.
 
+# Watch-Outs and Issues
+
+The biggest issue, I believe, came in when I was trying to produce scores using Go and then compare those scores to outputs from Python and R.  This comparison necessitated maintaining the order of the MNIST data through the Go program.  Since maps don't preserve order in golang, and since concurrency implementations can also throw off order, additional effort was needed to maintain order.
+
+This is minor: the Go score implemntations are generating a strong but negative correlation with Python and R implementations.  This is simply another watch-out: larger and smaller mean opposite things in Go vs the other implementations.
 
 # Program Structure and Use
 
@@ -61,10 +66,12 @@ The resultant exe from this work produces a CSV file with anomaly scores for eac
 In any case, run:
 
 ```bash
-TKTKTK
+./msds431wk7.exe
 ```
 
-the R file results/analyzeResults.R was largely provided by our professor as an example of how to quickly collect and compare different scores.  This code was enriched based on what he shared to also include multiple Go instances and to produce png versions of graphs for inclusion in this document.
+This will produce some terminal output to give you updates as the code executes.  The end product is saved to results/goIForestScores.csv.  This csv file is subsequently picked up by results/analyzeResults.R for processing and comparison to the other scores.
+
+The R file results/analyzeResults.R was largely provided by our professor as an example of how to quickly collect and compare different scores.  This code was enriched based on what he shared to also include multiple Go instances and to produce png versions of graphs for inclusion in this document.
 
 As always, this program was developed on a Mac although both Mac and Windows executables are provided.  This is because the Canvas website which manages assignments will only accept a .exe and won't accept a Mac executable.  The Mac executable has been tested and works; the Windows executable has not been tested.
 
@@ -86,9 +93,26 @@ These were all of the packages that we, as a class, took a look at to see if the
 
 ### Distribution Graphs
 
-**Go IForest**
+Note how all of these different approaches generate scores on different scales.  This isn't a dealbreaker but is very important as we move into implementation.
 
-![Distro-GoIForest](./results/fig-go-itree-anomaly-scores.png)
+| | |
+|:-------------------------:|:-------------------------:|
+|![Go ITree Anomaly Scores](results/fig-go-itree-anomaly-scores.png) |  ![Go RTree Anomaly Scores](results/fig-go-rtree-anomaly-scores.png) |
+|![Python Anomaly Scores](results/fig-python-anomaly-scores.png) | ![R Isotree Anomaly Scores](results/fig-r-isotree-anomaly-scores.png) |
+|![R Solitude Anomaly Scores](results/fig-r-solitude-anomaly-scores.png) | |
+
+### Correlation Scatters
+
+Note the different shapes of the distributions.  Full-size images are in the results folder.
+
+|             | goIF                                                      | goRF                                                      | isotree                                                   | python                                                    | solitude                                                 |
+|-------------|-----------------------------------------------------------|-----------------------------------------------------------|-----------------------------------------------------------|-----------------------------------------------------------|-----------------------------------------------------------|
+| **goIF**    | *Perfect correlation*                                          | | | | |
+| **goRF**    | ![img](results/fig-scatterplot-goRF-x-goIFe-anomaly-scores.png) | *Perfect correlation*                                          | | | |
+| **isotree** | ![img](results/fig-scatterplot-goIF-x-risotree-anomaly-scores.png) | ![img](results/fig-scatterplot-goRF-x-risotree-anomaly-scores.png) | *Perfect correlation*                                           |
+| **python**  | ![img](results/fig-scatterplot-goIF-x-python-anomaly-scores.png) | ![img](results/fig-scatterplot-goRF-x-python-anomaly-scores.png) | ![img](results/fig-scatterplot-isotree-anomaly-scores.png) | *Perfect correlation*                                          |  
+| **solitude**| ![img](results/fig-scatterplot-goIF-x-solitude-anomaly-scores.png) | ![img](results/fig-scatterplot-goRF-x-solitude-anomaly-scores.png) | ![img](results/fig-scatterplot-isotree-solitude-anomaly-scores.png) | ![img](results/fig-scatterplot-solitude-anomaly-scores.png) | *Perfect correlation*                                          |
+
 
 # FYI - assignment details motivating this work
 

@@ -6,7 +6,6 @@ import (
 	"math"
 	"math/rand"
 	"os"
-	"reflect"
 	"sort"
 
 	"github.com/e-XpertSolutions/go-iforest/iforest"
@@ -15,6 +14,7 @@ import (
 )
 
 // This is related to GoMNIST
+// Print the image to the console
 func printImage(image GoMNIST.RawImage) {
 	scaleFactor := 255.0 / 8.0
 	nRow := 28
@@ -45,6 +45,7 @@ func printImage(image GoMNIST.RawImage) {
 	}
 }
 
+// This takes all of the images and converts them to float64s
 func convertMNISTForModeling(images []GoMNIST.RawImage) [][]float64 {
 	var floatImages [][]float64
 
@@ -60,6 +61,7 @@ func convertMNISTForModeling(images []GoMNIST.RawImage) [][]float64 {
 }
 
 // This is related to normalizing the randomForest Isolation Forest implementation
+// Note: not sure if this is the correct implementation but it appears to work
 func normalizeScores(scores []float64, min, max float64) []float64 {
 	normalized := make([]float64, len(scores))
 	for i, score := range scores {
@@ -112,15 +114,11 @@ func WriteCSV(iForestAnomalyScores map[int]float64, normalizedScores map[int]flo
 }
 
 func main() {
-	rand.Seed(431)
+	rand.Seed(431) // Obvi.
 
 	//////////////////////////
 	// GoMNIST time			//
 	//////////////////////////
-	fmt.Println("GoMNIST time")
-	fmt.Println("GoMNIST time")
-	fmt.Println("GoMNIST time")
-
 	// Load the dataset
 	train, test, err := GoMNIST.Load("./data")
 	if err != nil {
@@ -132,13 +130,8 @@ func main() {
 	// This code returns the train and test MNIST.Set types
 	// Set has NRow, NCol, Images ([]RawImage), Labels ([]Label)
 
-	fmt.Println("Rows: ", train.NRow, test.NRow)
-	fmt.Println("Columns: ", train.NCol, test.NCol)
-	// Print the first image in the train and test set
-	//	fmt.Println(train.Labels[0], train.Images[0])
-	//	fmt.Println(test.Labels[0], test.Images[0])
-	//	fmt.Println(reflect.TypeOf(train.Images[0]))
-
+	fmt.Println("MNIST Rows: ", train.NRow, test.NRow)
+	fmt.Println("MNIST Columns: ", train.NCol, test.NCol)
 	inputData := convertMNISTForModeling(train.Images)
 
 	//////////////////////////
@@ -146,6 +139,8 @@ func main() {
 	//////////////////////////
 
 	// input parameters
+	// Note: these are defaults from the go-iforest package
+	// If you want to run concurrently
 	treesNumber := 100
 	subsampleSize := 256
 	outliersRatio := 0.01
@@ -155,15 +150,10 @@ func main() {
 	forest := iforest.NewForest(treesNumber, subsampleSize, outliersRatio)
 
 	//training stage - creating trees
-	fmt.Println("Starting training")
 	forest.Train(inputData)
 
 	//testing stage - finding anomalies
-	//Test or TestParaller can be used, concurrent version needs one additional
-	// parameter
-	fmt.Println("Starting testing")
 	forest.Test(inputData)
-	//	forest.TestParallel(inputData, routinesNumber)
 
 	//after testing it is possible to access anomaly scores, anomaly bound
 	// and labels for the input dataset
@@ -171,11 +161,6 @@ func main() {
 	//	threshold := forest.AnomalyBound
 	iForestAnomalyScores := forest.AnomalyScores
 	//	labelsTest := forest.Labels
-
-	//	fmt.Println("Anomaly scores: ", iForestAnomalyScores)
-	fmt.Println("Anomaly scores length: ", len(iForestAnomalyScores))
-	fmt.Println("Anomaly scores type: ", reflect.TypeOf(iForestAnomalyScores))
-	fmt.Println("Anomaly score for first item: ", iForestAnomalyScores[0])
 
 	// This code prints a rough histogram for each label
 	const numBands = 10
@@ -210,16 +195,17 @@ func main() {
 	// RandomForest time	//
 	//////////////////////////
 
-	fmt.Println("Starting RandomForest")
+	fmt.Println("Starting RandomForest (this takes a while)")
 	rForest := randomforest.IsolationForest{X: inputData}
 	rForest.Train(100000)
-	fmt.Println("rForest len", len(rForest.Results))
-	fmt.Println("rForest.Results type: ", reflect.TypeOf(rForest.Results))
-	fmt.Println("rForest.Results[0] type: ", reflect.TypeOf(rForest.Results[0]))
-	fmt.Println("rForest.Results[0]", rForest.Results[0])
+	fmt.Println("Finished RandomForest")
 
 	results := rForest.Results
 	// Calculate anomaly scores and find min and max scores.
+	// res[1] is the cumulative depth of the point in the trees.
+	// res[0] is the total number of trees with that point
+	// So the ratio ends up being an average depth
+	// Smaller ratio is more anomalous.
 	scores := make([]float64, len(results))
 	minScore := float64(results[0][1]) / float64(results[0][0])
 	maxScore := minScore
@@ -235,8 +221,6 @@ func main() {
 
 	// Normalize scores to a 0-1 range.
 	normalizedScores := normalizeScores(scores, minScore, maxScore)
-	fmt.Println("normalizedScores len", len(normalizedScores))
-	fmt.Println("Ten normalizedScores", normalizedScores[0:10])
 
 	//////////////////////////
 	// CSV time				//
